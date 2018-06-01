@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 OPTIONS = {
     # Bus numbers to track.
-    'busNumbers': [3001, 3002, 3732, 3768, 3770],
+    'busNumbers': [3001, 3002, 3732, 3768, 3770, 3619],
     # SMART API endpoint.
     'apiEndpoint': 'https://www.smartbus.org/DesktopModules/Smart.Endpoint/proxy.ashx',
     # Polling interval, in seconds.
     'interval': 300,
 }
 
-import urllib.request, json, discord, asyncio
+import urllib.request, json, discord, asyncio, datetime
 from collections import deque
 
 # This could be extractable and reusable, if I cared enough, but I don't, right now.
@@ -19,8 +19,11 @@ class SmartBusAPI(object):
     def getPredictions(self, bus):
         apiurl = self.apiEndpoint + "?method=predictionsforbus&vid=" + str(bus)
         data = None
-        with urllib.request.urlopen(apiurl) as url:
-            data = json.load(url)
+        try:
+            with urllib.request.urlopen(apiurl) as url:
+                data = json.load(url)
+        except urllib.error.URLError:
+            pass # swallow errors and pass a None up the chain
         return data
 
 class OfflineNotification(object):
@@ -88,6 +91,7 @@ async def trackBuses(tracker, cid, interval):
     await client.wait_until_ready()
     channel = discord.Object(id=cid)
     while not client.is_closed:
+        print(datetime.datetime.now().strftime('%H:%M:%S') + ': Running tracker')
         tracker.run()
         while tracker.notify:
             await client.send_message(channel, tracker.notify.popleft())
