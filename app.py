@@ -1,13 +1,14 @@
+#!/usr/bin/env python3
 OPTIONS = {
     # Bus numbers to track.
-    'busNumbers': [3732, 3002],
+    'busNumbers': [3001, 3002, 3732, 3768, 3770],
     # SMART API endpoint.
     'apiEndpoint': 'https://www.smartbus.org/DesktopModules/Smart.Endpoint/proxy.ashx',
     # Polling interval, in seconds.
     'interval': 300,
 }
 
-import urllib.request, json
+import urllib.request, json, discord, asyncio
 from collections import deque
 
 # This could be extractable and reusable, if I cared enough, but I don't, right now.
@@ -81,10 +82,26 @@ class BendyboiTracker(object):
                 pass
             else: # we didn't even get a valid API response
                 pass
-        print(self.notify)
 
-if __name__ == '__main__':
-    api = SmartBusAPI(OPTIONS.get('apiEndpoint', None))
-    tracker = BendyboiTracker(OPTIONS.get('busNumbers'), api)
-    tracker.run()
+client = discord.Client()
+async def trackBuses(tracker, cid, interval):
+    await client.wait_until_ready()
+    channel = discord.Object(id=cid)
+    while not client.is_closed:
+        tracker.run()
+        while tracker.notify:
+            await client.send_message(channel, tracker.notify.popleft())
+        await asyncio.sleep(interval)
 
+@client.event
+async def on_ready():
+    print('Logged in as')
+    print(client.user.name)
+    print(client.user.id)
+    print('----------------')
+
+
+api = SmartBusAPI(OPTIONS.get('apiEndpoint', None))
+tracker = BendyboiTracker(OPTIONS.get('busNumbers', None), api)
+client.loop.create_task(trackBuses(tracker, OPTIONS.get('channelID', None), OPTIONS.get('interval', 60)))
+client.run(OPTIONS.get('token'))
