@@ -10,6 +10,7 @@ OPTIONS = {
 
 import urllib.request, json, discord, asyncio, datetime
 from collections import deque
+from creds import CREDS
 
 # This could be extractable and reusable, if I cared enough, but I don't, right now.
 class SmartBusAPI(object):
@@ -107,5 +108,5 @@ async def on_ready():
 
 api = SmartBusAPI(OPTIONS.get('apiEndpoint', None))
 tracker = BendyboiTracker(OPTIONS.get('busNumbers', None), api)
-client.loop.create_task(trackBuses(tracker, OPTIONS.get('channelID', None), OPTIONS.get('interval', 60)))
-client.run(OPTIONS.get('token'))
+client.loop.create_task(trackBuses(tracker, CREDS.get('channelID', None), OPTIONS.get('interval', 60)))
+client.run(CREDS.get('token'))
