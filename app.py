@@ -11,6 +11,7 @@ OPTIONS = {
 import urllib.request, json, discord, asyncio, datetime
 from collections import deque
 from creds import CREDS
+from discord.ext import commands
 
 # This could be extractable and reusable, if I cared enough, but I don't, right now.
 class SmartBusAPI(object):
@@ -38,12 +39,13 @@ class OfflineNotification(object):
         return "Bus " + str(self.busid) + " is now offline."
 
 class OnlineNotification(object):
-    def __init__(self, busid, route, routeName, direction, firstStop, predictedTime):
+    def __init__(self, busid, route, routeName, direction, firstStop, stopId, predictedTime):
         self.busid = busid
         self.route = route
         self.routeName = routeName
         self.direction = direction
         self.firstStop = firstStop
+        self.stopId = stopId
         self.predictedTime = predictedTime
 
     def __repr__(self):
@@ -53,7 +55,7 @@ class OnlineNotification(object):
         return "Bus " + str(self.busid) \
           + " is heading to route " + str(self.route) \
           + " " + self.direction + " " + self.routeName + ". " \
-          + "First stop " + self.firstStop + " at " + self.predictedTime
+          + "First stop " + self.firstStop + " (ID " + self.stopId + ") at " + self.predictedTime
 
 class BendyboiTracker(object):
     def __init__(self, busesToTrack = None, api = SmartBusAPI()):
@@ -80,14 +82,20 @@ class BendyboiTracker(object):
                 routeName = firstPrediction['des']
                 direction = firstPrediction['rtdir']
                 firstStop = firstPrediction['stpnm']
+                stopId = firstPrediction['stpid']
                 predictedTime = firstPrediction['prdtm']
-                self.notify.append(OnlineNotification(busid, route, routeName, direction, firstStop, predictedTime))
+                self.notify.append(OnlineNotification(busid, route, routeName, direction, firstStop, stopId, predictedTime))
             elif r: # bus is online and was the last time we checked
                 pass
             else: # we didn't even get a valid API response
                 pass
 
-client = discord.Client()
+description = 'SMART bus tracker.'
+
+client = commands.Bot(command_prefix='!', description=description)
+api = SmartBusAPI(OPTIONS.get('apiEndpoint', None))
+tracker = BendyboiTracker(OPTIONS.get('busNumbers', None), api)
+
 async def trackBuses(tracker, cid, interval):
     await client.wait_until_ready()
     channel = discord.Object(id=cid)
@@ -98,6 +106,25 @@ async def trackBuses(tracker, cid, interval):
             await client.send_message(channel, tracker.notify.popleft())
         await asyncio.sleep(interval)
 
+@client.command()
+async def whereis(busid : int):
+    """Queries the API for the location of a bus."""
+    print('whereis')
+    resp = api.getPredictions(busid)
+    resp = resp.get('bustime-response', None)
+    if resp and not resp.get('error', None):
+        firstPrediction = resp['prd'][0]
+        route = firstPrediction['rt']
+        routeName = firstPrediction['des']
+        direction = firstPrediction['rtdir']
+        nextStop = firstPrediction['stpnm']
+        stopId = firstPrediction['stpid']
+        predictedTime = firstPrediction['prdtm']
+        await client.say('Bus ' + str(busid) + ' is on ' + str(route) + ' ' + direction + ' ' \
+            + routeName + '. Next stop ' + nextStop + ' (ID ' + stopId + ') at ' + predictedTime)
+    else:
+        await client.say('Bus ' + str(busid) + ' is currently offline.')
+
 @client.event
 async def on_ready():
     print('Logged in as')
@@ -105,8 +132,5 @@ async def on_ready():
     print(client.user.id)
     print('----------------')
 
-
-api = SmartBusAPI(OPTIONS.get('apiEndpoint', None))
-tracker = BendyboiTracker(OPTIONS.get('busNumbers', None), api)
 client.loop.create_task(trackBuses(tracker, CREDS.get('channelID', None), OPTIONS.get('interval', 60)))
 client.run(CREDS.get('token'))
