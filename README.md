@@ -1,5 +1,5 @@
 # bendyboi-tracker
-Periodically pokes the https://smartbus.org/ API and sends alerts when specific buses come online
+Discord bot that periodically pokes the https://smartbus.org/ API and sends alerts when specific buses come online
 
 ## API spec (as such)
 SMART's endpoint for next-stop predictions for a specific bus is located at `https://www.smartbus.org/DesktopModules/Smart.Endpoint/proxy.ashx?method=predictionsforbus&vid=BUSNUMBER`.
