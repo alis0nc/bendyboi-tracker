@@ -2,7 +2,7 @@
 
 import urllib.request, json, discord, asyncio, datetime
 from collections import deque
-from creds import CREDS
+from config import CREDS, OPTIONS
 from discord.ext import commands
 
 # This could be extractable and reusable, if I cared enough, but I don't, right now.
