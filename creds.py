@@ -1,4 +1,0 @@
-CREDS = {
-    'channelID': '',
-    'token': '',
-}
