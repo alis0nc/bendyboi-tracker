@@ -20,10 +20,17 @@ class SmartBusAPI(object):
 
     def getPredictions(self, bus):
         apiurl = self.apiEndpoint + "?method=predictionsforbus&vid=" + str(bus)
+        req = urllib.request.Request(
+            apiurl, 
+            data = None,
+            headers = {
+                'User-Agent': 'Bendybot/0.0.1 (https://github.com/alis0nc/bendyboi-tracker; bendyboi.tracker@alisonc.net)'
+            }
+        )
         data = None
         try:
-            with urllib.request.urlopen(apiurl) as url:
-                data = json.load(url)
+            with urllib.request.urlopen(req) as u:
+                data = json.load(u)
         except urllib.error.URLError:
             pass # swallow errors and pass a None up the chain
         return data
