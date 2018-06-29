@@ -1,5 +1,5 @@
 # bendyboi-tracker
-Periodically pokes the https://smartbus.org/ API and sends alerts when specific buses come online
+Discord bot that periodically pokes the https://smartbus.org/ API and sends alerts when specific buses come online
 
 ## API spec (as such)
 SMART's endpoint for next-stop predictions for a specific bus is located at `https://www.smartbus.org/DesktopModules/Smart.Endpoint/proxy.ashx?method=predictionsforbus&vid=BUSNUMBER`.
@@ -65,10 +65,10 @@ When the bus is on route or heading from the terminal to its first trip, a respo
 }
 ```
 * *tmstmp*: timestamp of the API result
-* *typ*: ?
+* *typ*: A for arrival or D for departure; D is only present on the first stop of a trip
 * *stpnm*: Stop Name
 * *stpid*: Stop ID, corresponds to textmybus and SMART's GTFS file I believe
-* *dstp*: ?
+* *dstp*: Distance remaining to the stop, in feet.
 * *rt*: Route Number
 * *rtdir*: Route Direction
 * *des*: Description (route name; roughly corresponds to what's on the bus's headsign)
