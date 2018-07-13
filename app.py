@@ -74,7 +74,7 @@ class BendyboiTracker(object):
                 self.notify.append(OfflineNotification(busid))
             elif r and r.get('error', None): # bus is offline and was the last time we checked
                 pass
-            elif r and not self.busesOnline[busid]: # bus is online and wasn't the last time we checked
+            elif r and r.get('prd', None) and not self.busesOnline[busid]: # bus is online and wasn't the last time we checked
                 self.busesOnline[busid] = True
                 firstPrediction = r['prd'][0]
                 route = firstPrediction['rt']
@@ -84,7 +84,7 @@ class BendyboiTracker(object):
                 stopId = firstPrediction['stpid']
                 predictedTime = firstPrediction['prdtm']
                 self.notify.append(OnlineNotification(busid, route, routeName, direction, firstStop, stopId, predictedTime))
-            elif r: # bus is online and was the last time we checked
+            elif r and r.get('prd', None): # bus is online and was the last time we checked
                 pass
             else: # we didn't even get a valid API response
                 pass
