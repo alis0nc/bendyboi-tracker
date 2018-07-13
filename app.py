@@ -124,6 +124,10 @@ async def whereis(busid : int):
     else:
         await client.say('Bus ' + str(busid) + ' is currently offline.')
 
+@client.command()
+async def github():
+    await client.say('https://github.com/alis0nc/bendyboi-tracker')
+
 @client.event
 async def on_ready():
     print('Logged in as')
