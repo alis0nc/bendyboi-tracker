@@ -67,7 +67,7 @@ class BendyboiTracker(object):
 
     def run(self):
         for busid in self.busesToTrack:
-            r = api.getPredictions(busid)
+            r = api.getPredictions(busid) or {}
             r = r.get('bustime-response', None)
             if r and r.get('error', None) and self.busesOnline[busid]: # bus is offline now and was online the last time we checked
                 self.busesOnline[busid] = False
