@@ -76,7 +76,10 @@ class BendyboiTracker(object):
                 pass
             elif r and r.get('prd', None) and not self.busesOnline[busid]: # bus is online and wasn't the last time we checked
                 self.busesOnline[busid] = True
-                firstPrediction = r['prd'][0]
+                try:
+                    firstPrediction = r['prd'][0]
+                except KeyError: # Only one prediction, so API doesn't gives us an array >(
+                    firstPrediction = r['prd']
                 route = firstPrediction['rt']
                 routeName = firstPrediction['des']
                 direction = firstPrediction['rtdir']
@@ -112,7 +115,10 @@ async def whereis(busid : int):
     resp = api.getPredictions(busid)
     resp = resp.get('bustime-response', None)
     if resp and not resp.get('error', None):
-        firstPrediction = resp['prd'][0]
+        try:
+            firstPrediction = r['prd'][0]
+        except KeyError: # Only one prediction, so API doesn't gives us an array >(
+            firstPrediction = r['prd']
         route = firstPrediction['rt']
         routeName = firstPrediction['des']
         direction = firstPrediction['rtdir']
