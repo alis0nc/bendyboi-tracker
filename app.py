@@ -116,9 +116,9 @@ async def whereis(busid : int):
     resp = resp.get('bustime-response', None)
     if resp and not resp.get('error', None):
         try:
-            firstPrediction = r['prd'][0]
+            firstPrediction = resp['prd'][0]
         except KeyError: # Only one prediction, so API doesn't gives us an array >(
-            firstPrediction = r['prd']
+            firstPrediction = resp['prd']
         route = firstPrediction['rt']
         routeName = firstPrediction['des']
         direction = firstPrediction['rtdir']
