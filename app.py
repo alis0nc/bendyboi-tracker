@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
-import urllib.request, json, discord, asyncio, datetime
+import urllib.request, json, discord, asyncio
+from datetime import datetime
 from collections import deque
 from config import CREDS, OPTIONS
 from discord.ext import commands
@@ -22,7 +23,9 @@ class SmartBusAPI(object):
         data = None
         try:
             with urllib.request.urlopen(req) as u:
-                data = json.load(u)
+                d = u.read()
+                encoding = u.info().get_content_charset('utf-8')
+                data = json.loads(d.decode(encoding))
         except urllib.error.URLError:
             pass # swallow errors and pass a None up the chain
         return data
@@ -61,12 +64,16 @@ class BendyboiTracker(object):
         self.busesToTrack = busesToTrack
         self.api = api
         self.busesOnline = {}
+        self.lastPredictedTimes = {}
         self.notify = deque()
         for busid in busesToTrack:
             self.busesOnline[busid] = False
 
     def run(self):
         for busid in self.busesToTrack:
+            print(self.lastPredictedTimes)
+            if busid in self.lastPredictedTimes and datetime.now() < self.lastPredictedTimes[busid]:
+                pass
             r = api.getPredictions(busid) or {}
             r = r.get('bustime-response', None)
             if r and r.get('error', None) and self.busesOnline[busid]: # bus is offline now and was online the last time we checked
@@ -78,14 +85,18 @@ class BendyboiTracker(object):
                 self.busesOnline[busid] = True
                 try:
                     firstPrediction = r['prd'][0]
+                    lastPrediction = r['prd'][-1]
                 except KeyError: # Only one prediction, so API doesn't gives us an array >(
                     firstPrediction = r['prd']
+                    lastPrediction = r['prd']
                 route = firstPrediction['rt']
                 routeName = firstPrediction['des']
                 direction = firstPrediction['rtdir']
                 firstStop = firstPrediction['stpnm']
                 stopId = firstPrediction['stpid']
                 predictedTime = firstPrediction['prdtm']
+                tripId = firstPrediction['tatripid']
+                self.lastPredictedTimes[busid] = datetime.strptime(lastPrediction['prdtm'], '%Y%m%d %H:%M')
                 self.notify.append(OnlineNotification(busid, route, routeName, direction, firstStop, stopId, predictedTime))
             elif r and r.get('prd', None): # bus is online and was the last time we checked
                 pass
@@ -102,7 +113,7 @@ async def trackBuses(tracker, cid, interval):
     await client.wait_until_ready()
     channel = discord.Object(id=cid)
     while not client.is_closed:
-        print(datetime.datetime.now().strftime('%H:%M:%S') + ': Running tracker')
+        print(datetime.now().strftime('%Y-%m-%d %H:%M:%S') + ': Running tracker')
         tracker.run()
         while tracker.notify:
             await client.send_message(channel, tracker.notify.popleft())
@@ -111,23 +122,29 @@ async def trackBuses(tracker, cid, interval):
 @client.command()
 async def whereis(busid : int):
     """Queries the API for the location of a bus."""
-    print('whereis')
+    print(datetime.now().strftime('%Y-%m-%d %H:%M:%S') + ': whereis ' + busid.__str__())
     resp = api.getPredictions(busid)
     resp = resp.get('bustime-response', None)
     if resp and not resp.get('error', None):
         try:
             firstPrediction = resp['prd'][0]
+            lastPrediction = resp['prd'][-1]
         except KeyError: # Only one prediction, so API doesn't gives us an array >(
             firstPrediction = resp['prd']
+            lastPrediction = resp['prd']
         route = firstPrediction['rt']
         routeName = firstPrediction['des']
         direction = firstPrediction['rtdir']
         nextStop = firstPrediction['stpnm']
         stopId = firstPrediction['stpid']
         predictedTime = firstPrediction['prdtm']
+        if busid in tracker.lastPredictedTimes:
+            tracker.lastPredictedTimes[busid] = datetime.strptime(lastPrediction['prdtm'], '%Y%m%d %H:%M')
         await client.say('Bus ' + str(busid) + ' is on ' + str(route) + ' ' + direction + ' ' \
             + routeName + '. Next stop ' + nextStop + ' (ID ' + stopId + ') at ' + predictedTime)
     else:
+        if busid in tracker.lastPredictedTimes:
+            del tracker.lastPredictedTimes[busid]
         await client.say('Bus ' + str(busid) + ' is currently offline.')
 
 @client.command()
